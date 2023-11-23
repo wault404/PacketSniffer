@@ -1,8 +1,6 @@
-# ScriptForCapturing
 from scapy.all import sniff
 from scapy.layers.inet import IP
 import socket
-# AndroidAppScript
 import kivy
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
@@ -16,7 +14,7 @@ class MyRoot(BoxLayout):
         super(MyRoot, self).__init__(**kwargs)
 
         self.orientation = 'vertical'
-        self.packets = []  # List to store packets
+        self.packets = []
         self.packet_textinput = TextInput(text="-", font_size=12, readonly=True)
         self.add_widget(self.packet_textinput)
 
@@ -32,7 +30,6 @@ class MyRoot(BoxLayout):
         except KeyboardInterrupt:
             print("\nExiting...")
 
-        # Append new packets to the list
         self.packet_textinput.text = "\n".join(self.packets)
 
     def packet_callback(self, packet, local_ip):
@@ -41,7 +38,6 @@ class MyRoot(BoxLayout):
             print(packet.summary())
 
     def start_capture(self, instance):
-        # Clear the existing content
         self.packets = []
         self.packet_textinput.text = ""
         self.capture_network_packets()
