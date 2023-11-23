@@ -1,3 +1,4 @@
+
 from scapy.all import sniff
 from scapy.layers.inet import IP
 import socket
@@ -6,6 +7,7 @@ from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.clock import Clock
 from kivy.uix.textinput import TextInput
+# import android.permissions as permissions
 
 
 
@@ -14,13 +16,19 @@ class MyRoot(BoxLayout):
         super(MyRoot, self).__init__(**kwargs)
 
         self.orientation = 'vertical'
-        self.packets = []
+        self.packets = []  # List to store packets
         self.packet_textinput = TextInput(text="-", font_size=12, readonly=True)
         self.add_widget(self.packet_textinput)
 
-        Clock.schedule_interval(self.update_packet_info, 0.1)
+        Clock.schedule_interval(self.update_packet_info, 0.7)
         self.local_ip = get_local_ip_address()
-
+# DEBUG
+        #permissions.check_permission('INTERNET', callback=self.permission_callback)
+    # def permission_callback(self, permission, status):
+        # if status:
+            # print(f"Permission {permission} dostal.")
+        # else:
+            # print(f"Permission {permission} nedostal.")
     def update_packet_info(self, dt):
         self.capture_network_packets()
 
@@ -30,6 +38,7 @@ class MyRoot(BoxLayout):
         except KeyboardInterrupt:
             print("\nExiting...")
 
+        # Append new packets to the list
         self.packet_textinput.text = "\n".join(self.packets)
 
     def packet_callback(self, packet, local_ip):
@@ -38,6 +47,7 @@ class MyRoot(BoxLayout):
             print(packet.summary())
 
     def start_capture(self, instance):
+        # Clear the existing content
         self.packets = []
         self.packet_textinput.text = ""
         self.capture_network_packets()
