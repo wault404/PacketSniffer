@@ -1,0 +1,18 @@
+Collecting pcapy
+  Using cached pcapy-0.11.4.tar.gz (37 kB)
+  Preparing metadata (setup.py) ... error
+  error: subprocess-exited-with-error
+  
+  × python setup.py egg_info did not run successfully.
+  │ exit code: 1
+  ╰─> [6 lines of output]
+      Traceback (most recent call last):
+        File "<string>", line 2, in <module>
+        File "<pip-setuptools-caller>", line 34, in <module>
+          save_init_posix = sysconfig._init_posix
+      [end of output]
+  note: This error originates from a subprocess, and is likely not a problem with pip.
+
+╰─> See above for output.
+
+hint: See above for details.
