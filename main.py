@@ -1,13 +1,16 @@
 
 from scapy.all import sniff
 from scapy.layers.inet import IP
+from scapy.config import conf
+conf.use_pcap = True
 import socket
 import kivy
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.clock import Clock
 from kivy.uix.textinput import TextInput
-# import android.permissions as permissions
+from android.permissions import request_permission, check_permission
+
 
 
 
@@ -16,19 +19,26 @@ class MyRoot(BoxLayout):
         super(MyRoot, self).__init__(**kwargs)
 
         self.orientation = 'vertical'
-        self.packets = []  # List to store packets
+        self.packets = []
         self.packet_textinput = TextInput(text="-", font_size=12, readonly=True)
         self.add_widget(self.packet_textinput)
 
         Clock.schedule_interval(self.update_packet_info, 0.7)
         self.local_ip = get_local_ip_address()
-# DEBUG
-        #permissions.check_permission('INTERNET', callback=self.permission_callback)
-    # def permission_callback(self, permission, status):
-        # if status:
-            # print(f"Permission {permission} dostal.")
-        # else:
-            # print(f"Permission {permission} nedostal.")
+
+        if not check_permission('INTERNET'):
+            request_permission('INTERNET', self.permission_callback)
+        if not check_permission('ACCESS_FINE_LOCATION'):
+            request_permission('ACCESS_FINE_LOCATION', self.permission_callback)
+        if not check_permission('ACCESS_NETWORK_STATE'):
+            request_permission('ACCESS_NETWORK_STATE', self.permission_callback)
+
+    def permission_callback(self, permission, status):
+        if status:
+            print(f"Permission {permission} granted.")
+            self.start_capture(None)
+        else:
+            print(f"Permission {permission} not granted. Network operations may not work.")
     def update_packet_info(self, dt):
         self.capture_network_packets()
 
@@ -37,8 +47,6 @@ class MyRoot(BoxLayout):
             sniff(prn=lambda pkt: self.packet_callback(pkt, self.local_ip), store=0, timeout=0.5)
         except KeyboardInterrupt:
             print("\nExiting...")
-
-        # Append new packets to the list
         self.packet_textinput.text = "\n".join(self.packets)
 
     def packet_callback(self, packet, local_ip):
@@ -47,7 +55,6 @@ class MyRoot(BoxLayout):
             print(packet.summary())
 
     def start_capture(self, instance):
-        # Clear the existing content
         self.packets = []
         self.packet_textinput.text = ""
         self.capture_network_packets()
