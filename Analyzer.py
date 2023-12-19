@@ -9,10 +9,7 @@ conf.use_pcap = True
 class PacketSniffer:
     def __init__(self, target_ip):
         self.target_ip = target_ip
-
-        # Load the MaxMind GeoIP database
         self.reader = geoip2.database.Reader(r'C:\Users\Wault404\Desktop\python\SOCAnalyze\GeoLite2-City_20231110\GeoLite2-City.mmdb')
-
     def resolve_ip_name(self, ip_address):
         try:
             host_name, _, _ = socket.gethostbyaddr(ip_address)
@@ -23,15 +20,13 @@ class PacketSniffer:
     def packet_callback(self, packet):
         packet_summary = f"Summary: {packet.summary()}"
 
-        # Add resolved IP names
         src_name = self.resolve_ip_name(packet[IP].src)
         dst_name = self.resolve_ip_name(packet[IP].dst)
         packet_summary += f"\nSource IP: {packet[IP].src} ({src_name}), Destination IP: {packet[IP].dst} ({dst_name})"
 
-        # Add packet size
+
         packet_summary += f"\nPacket Size: {len(packet)} bytes"
 
-        # Add GeoIP information
         geoip_info = self.get_geoip_info(packet[IP].src)
         packet_summary += f"\nGeoIP: {geoip_info}"
 
@@ -55,11 +50,10 @@ class PacketSniffer:
             print("\nExiting...")
 
     def on_stop(self):
-        # Close the MaxMind GeoIP database when the application stops
         self.reader.close()
 
 
 if __name__ == "__main__":
-    target_ip = "192.168.0.103"
+    target_ip = "TvojIPsem"
     packet_sniffer = PacketSniffer(target_ip)
     packet_sniffer.start_capture()
