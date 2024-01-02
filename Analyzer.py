@@ -12,7 +12,8 @@ import pstats
 conf.use_pcap = True
 
 class PacketSniffer:
-    def __init__(self, target_ip, capture_duration_minutes=1):
+    def __init__(self, target_ip, capture_duration_minutes=5):
+        #VALUE OF capture_duration_minutes IS ON THE USER
         self.target_ip = target_ip
         self.capture_duration = timedelta(minutes=capture_duration_minutes)
         self.start_time = datetime.now()
@@ -31,8 +32,8 @@ class PacketSniffer:
             'Source IP': src_ip,
             'Destination IP': dst_ip,
             'Packet Size': packet_size,
-            'GeoIP Information': None,  # Assigning None for now
-            'AS Organization': None  # Assigning None for now
+            'GeoIP Information': None,  # None for now
+            'AS Organization': None  #None for now
         })
 
     def assign_geoip_info(self):
@@ -167,13 +168,5 @@ class PacketSniffer:
 
 if __name__ == "__main__":
     target_ip = "192.168.0.108"
-    packet_sniffer = PacketSniffer(target_ip, capture_duration_minutes=5)
-
-    # Start profiling
-    profiler = cProfile.Profile()
-    profiler.enable()
-    packet_sniffer.start_capture()
-    profiler.disable()
-    stats = pstats.Stats(profiler)
-    stats.sort_stats('cumulative')
-    stats.print_stats()
+    #target_ip IS USER DEPENDENT RUN ipconfig IN CMD AND EXTRACT THE IPv4 Addres
+    packet_sniffer = PacketSniffer(target_ip)
