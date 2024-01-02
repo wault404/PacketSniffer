@@ -6,8 +6,6 @@ import tkinter as tk
 from tkinter import ttk
 from datetime import datetime, timedelta
 import csv
-import cProfile
-import pstats
 
 conf.use_pcap = True
 
