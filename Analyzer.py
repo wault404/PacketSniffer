@@ -7,17 +7,25 @@ from tkinter import ttk
 from datetime import datetime, timedelta
 import csv
 import time
-
+# POSSIBLE LOOKUP BATCHING FOR BETTER OPTIMIZATION GEOIP SUPPORTS IT!
 conf.use_pcap = True
 
 class PacketSniffer:
     def __init__(self, target_ip, capture_duration_minutes=1):
-        # VALUE OF capture_duration_minutes IS ON THE USER
         self.target_ip = target_ip
         self.capture_duration = timedelta(minutes=capture_duration_minutes)
         self.start_time = time.time()
         self.geoip_results = []
         self.reader = geoip2.database.Reader(r'C:\Users\Wault404\Desktop\python\SOCAnalyze\GeoLite2-City_20231110\GeoLite2-City.mmdb')
+
+        # Cache for storing GeoIP information
+        self.geoip_cache = {}
+
+    def get_geoip_info_from_cache(self, src_ip):
+        return self.geoip_cache.get(src_ip)
+
+    def add_geoip_info_to_cache(self, src_ip, geoip_info):
+        self.geoip_cache[src_ip] = geoip_info
 
     def packet_callback(self, packet):
         src_ip = packet[IP].src
@@ -26,13 +34,24 @@ class PacketSniffer:
 
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+        # Check if GeoIP information is in the cache
+        cached_result = self.get_geoip_info_from_cache(src_ip)
+        if cached_result:
+            geoip_info, as_info = cached_result
+        else:
+            # If not in the cache, perform GeoIP lookup
+            geoip_info, as_info = self.fetch_geoip_info(src_ip)
+
+            # Add the result to the cache
+            self.add_geoip_info_to_cache(src_ip, (geoip_info, as_info))
+
         self.geoip_results.append({
             'Timestamp': timestamp,
             'Source IP': src_ip,
             'Destination IP': dst_ip,
             'Packet Size': packet_size,
-            'GeoIP Information': None,
-            'AS Organization': None
+            'GeoIP Information': geoip_info,
+            'AS Organization': as_info
         })
 
     def timeout_callback(self, packet):
@@ -41,34 +60,27 @@ class PacketSniffer:
             return True
 
     def assign_geoip_info(self):
-        for result in self.geoip_results:
-            src_ip = result['Source IP']
+        # No need to perform GeoIP lookups here, as the information is already in the cache
+        pass
 
-            try:
-                response = self.reader.city(src_ip)
-                country = response.country.name
-                city = response.city.name
+    def fetch_geoip_info(self, src_ip):
+        try:
+            # Perform GeoIP lookup
+            response = self.reader.city(src_ip)
+            country = response.country.name
+            city = response.city.name
 
-                ipwhois = IPWhois(src_ip)
-                ipwhois_result = ipwhois.lookup_rdap()
-                as_info = ipwhois_result.get('asn_description', 'N/A')
+            ipwhois = IPWhois(src_ip)
+            ipwhois_result = ipwhois.lookup_rdap()
+            as_info = ipwhois_result.get('asn_description', 'N/A')
 
-                geoip_info = f"Country: {country}, City: {city}"
-            except geoip2.errors.AddressNotFoundError:
-                geoip_info = "GeoIP information not available"
-                as_info = "N/A"
-            except Exception as e:
-                geoip_info = f"Error retrieving GeoIP information: {e}"
-                as_info = "N/A"
+            geoip_info = f"Country: {country}, City: {city}"
 
-            if as_info == "arin-pfs-sea":
-                as_info = "Custom AS Organization: arin-pfs-sea"
-
-            result['GeoIP Information'] = geoip_info
-            result['AS Organization'] = as_info
-
-            # Debug
-            print(f"Processed IP: {src_ip}, GeoIP Information: {geoip_info}, AS Organization: {as_info}")
+            return geoip_info, as_info
+        except geoip2.errors.AddressNotFoundError:
+            return "GeoIP information not available", "N/A"
+        except Exception as e:
+            return f"Error retrieving GeoIP information: {e}", "N/A"
 
     def start_capture(self):
         try:
