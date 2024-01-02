@@ -7,7 +7,7 @@ from tkinter import ttk
 from datetime import datetime, timedelta
 import csv
 import time
-# POSSIBLE LOOKUP BATCHING FOR BETTER OPTIMIZATION GEOIP SUPPORTS IT!
+# POSSIBLE LOOKUP BATCHING FOR BETTER OPTIMIZATION GEOIP2-City SUPPORTS IT!
 conf.use_pcap = True
 
 class PacketSniffer:
@@ -34,15 +34,11 @@ class PacketSniffer:
 
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # Check if GeoIP information is in the cache
         cached_result = self.get_geoip_info_from_cache(src_ip)
         if cached_result:
             geoip_info, as_info = cached_result
         else:
-            # If not in the cache, perform GeoIP lookup
             geoip_info, as_info = self.fetch_geoip_info(src_ip)
-
-            # Add the result to the cache
             self.add_geoip_info_to_cache(src_ip, (geoip_info, as_info))
 
         self.geoip_results.append({
@@ -58,22 +54,14 @@ class PacketSniffer:
         elapsed_time = datetime.now() - self.start_time
         if elapsed_time >= self.capture_duration:
             return True
-
-    def assign_geoip_info(self):
-        # No need to perform GeoIP lookups here, as the information is already in the cache
-        pass
-
     def fetch_geoip_info(self, src_ip):
         try:
-            # Perform GeoIP lookup
             response = self.reader.city(src_ip)
             country = response.country.name
             city = response.city.name
-
             ipwhois = IPWhois(src_ip)
             ipwhois_result = ipwhois.lookup_rdap()
             as_info = ipwhois_result.get('asn_description', 'N/A')
-
             geoip_info = f"Country: {country}, City: {city}"
 
             return geoip_info, as_info
