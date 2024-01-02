@@ -6,13 +6,12 @@ import tkinter as tk
 from tkinter import ttk
 from datetime import datetime, timedelta
 import csv
-import cProfile
-import pstats
 
 conf.use_pcap = True
 
 class PacketSniffer:
-    def __init__(self, target_ip, capture_duration_minutes=1):
+    def __init__(self, target_ip, capture_duration_minutes=5):
+        #VALUE OF capture_duration_minutes IS ON THE USER
         self.target_ip = target_ip
         self.capture_duration = timedelta(minutes=capture_duration_minutes)
         self.start_time = datetime.now()
@@ -31,8 +30,8 @@ class PacketSniffer:
             'Source IP': src_ip,
             'Destination IP': dst_ip,
             'Packet Size': packet_size,
-            'GeoIP Information': None,  # Assigning None for now
-            'AS Organization': None  # Assigning None for now
+            'GeoIP Information': None,
+            'AS Organization': None
         })
 
     def assign_geoip_info(self):
@@ -59,11 +58,11 @@ class PacketSniffer:
             if as_info == "arin-pfs-sea":
                 as_info = "Custom AS Organization: arin-pfs-sea"
 
-            # Update the geoip_info and as_info in the geoip_results
+
             result['GeoIP Information'] = geoip_info
             result['AS Organization'] = as_info
 
-            # Add debug prints
+    #debug
             print(f"Processed IP: {src_ip}, GeoIP Information: {geoip_info}, AS Organization: {as_info}")
 
     def start_capture(self):
@@ -103,7 +102,6 @@ class PacketSniffer:
                     result['GeoIP Information'],
                     result['AS Organization']
                 ])
-
     def display_geoip_table(self):
         root = tk.Tk()
         root.title("GeoIP Information")
@@ -167,13 +165,6 @@ class PacketSniffer:
 
 if __name__ == "__main__":
     target_ip = "192.168.0.108"
-    packet_sniffer = PacketSniffer(target_ip, capture_duration_minutes=5)
+    #target_ip IS USER DEPENDENT RUN ipconfig IN CMD AND EXTRACT THE IPv4 Addres
+    packet_sniffer = PacketSniffer(target_ip)
 
-    # Start profiling
-    profiler = cProfile.Profile()
-    profiler.enable()
-    packet_sniffer.start_capture()
-    profiler.disable()
-    stats = pstats.Stats(profiler)
-    stats.sort_stats('cumulative')
-    stats.print_stats()
