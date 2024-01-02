@@ -82,7 +82,6 @@ class PacketSniffer:
 
     def stop_capture(self):
         print("\nStopping capture...")
-        self.assign_geoip_info()
         self.reader.close()
         self.save_to_csv("geoip_information.csv", self.geoip_results)
         self.display_geoip_table()
