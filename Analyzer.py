@@ -6,15 +6,16 @@ import tkinter as tk
 from tkinter import ttk
 from datetime import datetime, timedelta
 import csv
+import time
 
 conf.use_pcap = True
 
 class PacketSniffer:
-    def __init__(self, target_ip, capture_duration_minutes=5):
-        #VALUE OF capture_duration_minutes IS ON THE USER
+    def __init__(self, target_ip, capture_duration_minutes=1):
+        # VALUE OF capture_duration_minutes IS ON THE USER
         self.target_ip = target_ip
         self.capture_duration = timedelta(minutes=capture_duration_minutes)
-        self.start_time = datetime.now()
+        self.start_time = time.time()
         self.geoip_results = []
         self.reader = geoip2.database.Reader(r'C:\Users\Wault404\Desktop\python\SOCAnalyze\GeoLite2-City_20231110\GeoLite2-City.mmdb')
 
@@ -33,6 +34,11 @@ class PacketSniffer:
             'GeoIP Information': None,
             'AS Organization': None
         })
+
+    def timeout_callback(self, packet):
+        elapsed_time = datetime.now() - self.start_time
+        if elapsed_time >= self.capture_duration:
+            return True
 
     def assign_geoip_info(self):
         for result in self.geoip_results:
@@ -58,29 +64,22 @@ class PacketSniffer:
             if as_info == "arin-pfs-sea":
                 as_info = "Custom AS Organization: arin-pfs-sea"
 
-
             result['GeoIP Information'] = geoip_info
             result['AS Organization'] = as_info
 
-    #debug
+            # Debug
             print(f"Processed IP: {src_ip}, GeoIP Information: {geoip_info}, AS Organization: {as_info}")
 
     def start_capture(self):
         try:
-            start_time = datetime.now()
-
-            def timeout_callback(packet):
-                elapsed_time = datetime.now() - start_time
-                if elapsed_time >= self.capture_duration:
-                    return True  # Stop capturing
-
-            sniff(prn=self.packet_callback, filter=f"host {self.target_ip}", store=0, stop_filter=timeout_callback,
+            self.start_time = datetime.now()
+            sniff(prn=self.packet_callback, filter=f"host {self.target_ip}", store=0, stop_filter=self.timeout_callback,
                   timeout=self.capture_duration.total_seconds())
         except KeyboardInterrupt:
             pass
         finally:
-            # Do not call assign_geoip_info here, as it will process during capture
             self.stop_capture()
+
     def stop_capture(self):
         print("\nStopping capture...")
         self.assign_geoip_info()
@@ -102,6 +101,7 @@ class PacketSniffer:
                     result['GeoIP Information'],
                     result['AS Organization']
                 ])
+
     def display_geoip_table(self):
         root = tk.Tk()
         root.title("GeoIP Information")
@@ -138,7 +138,8 @@ class PacketSniffer:
         grouped_root.title("Grouped GeoIP Information")
 
         grouped_tree = ttk.Treeview(grouped_root)
-        grouped_tree["columns"] = ("Timestamp", "Source IP", "Destination IP", "Packet Size (KB)", "GeoIP Information", "AS Organization")
+        grouped_tree["columns"] = (
+            "Timestamp", "Source IP", "Destination IP", "Packet Size (KB)", "GeoIP Information", "AS Organization")
         grouped_tree.heading("Timestamp", text="Timestamp")
         grouped_tree.heading("Source IP", text="Source IP")
         grouped_tree.heading("Destination IP", text="Destination IP")
@@ -165,6 +166,9 @@ class PacketSniffer:
 
 if __name__ == "__main__":
     target_ip = "192.168.0.108"
-    #target_ip IS USER DEPENDENT RUN ipconfig IN CMD AND EXTRACT THE IPv4 Addres
     packet_sniffer = PacketSniffer(target_ip)
-
+#target_ip IS USER DEPENDENT RUN ipconfig IN CMD AND EXTRACT THE IPv4 Addres
+    try:
+        packet_sniffer.start_capture()
+    except KeyboardInterrupt:
+        pass
