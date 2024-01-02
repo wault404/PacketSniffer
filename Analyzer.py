@@ -30,8 +30,8 @@ class PacketSniffer:
             'Source IP': src_ip,
             'Destination IP': dst_ip,
             'Packet Size': packet_size,
-            'GeoIP Information': None,  # None for now
-            'AS Organization': None  #None for now
+            'GeoIP Information': None,
+            'AS Organization': None
         })
 
     def assign_geoip_info(self):
@@ -58,11 +58,11 @@ class PacketSniffer:
             if as_info == "arin-pfs-sea":
                 as_info = "Custom AS Organization: arin-pfs-sea"
 
-            # Update the geoip_info and as_info in the geoip_results
+
             result['GeoIP Information'] = geoip_info
             result['AS Organization'] = as_info
 
-            # Add debug prints
+    #debug
             print(f"Processed IP: {src_ip}, GeoIP Information: {geoip_info}, AS Organization: {as_info}")
 
     def start_capture(self):
@@ -102,7 +102,6 @@ class PacketSniffer:
                     result['GeoIP Information'],
                     result['AS Organization']
                 ])
-
     def display_geoip_table(self):
         root = tk.Tk()
         root.title("GeoIP Information")
