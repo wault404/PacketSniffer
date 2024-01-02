@@ -84,9 +84,8 @@ class PacketSniffer:
             self.stop_capture()
     def stop_capture(self):
         print("\nStopping capture...")
-        self.reader.close()
-        # Process GeoIP information after capture
         self.assign_geoip_info()
+        self.reader.close()
         self.save_to_csv("geoip_information.csv", self.geoip_results)
         self.display_geoip_table()
 
@@ -173,11 +172,7 @@ if __name__ == "__main__":
     # Start profiling
     profiler = cProfile.Profile()
     profiler.enable()
-
-    # Run the start_capture method for profiling
     packet_sniffer.start_capture()
-
-    # Stop profiling
     profiler.disable()
     stats = pstats.Stats(profiler)
     stats.sort_stats('cumulative')
