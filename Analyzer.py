@@ -11,7 +11,7 @@ import time
 conf.use_pcap = True
 
 class PacketSniffer:
-    def __init__(self, target_ip, capture_duration_minutes=1):
+    def __init__(self, target_ip, capture_duration_minutes=5):
         self.target_ip = target_ip
         self.capture_duration = timedelta(minutes=capture_duration_minutes)
         self.start_time = time.time()
