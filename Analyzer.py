@@ -6,7 +6,6 @@ import tkinter as tk
 from tkinter import ttk
 from datetime import datetime, timedelta
 import csv
-import time
 from tqdm import tqdm
 
 conf.use_pcap = True
@@ -15,7 +14,7 @@ class PacketSniffer:
     def __init__(self, target_ip, capture_duration_minutes=1):
         self.target_ip = target_ip
         self.capture_duration = timedelta(minutes=capture_duration_minutes)
-        self.start_time = time.time()
+        self.start_time = None
         self.geoip_results = []
         self.geoip_cache = {}
         self.reader = geoip2.database.Reader(r'C:\Users\Wault404\Desktop\python\SOCAnalyze\GeoLite2-City_20231110\GeoLite2-City.mmdb')
@@ -41,16 +40,16 @@ class PacketSniffer:
         if elapsed_time >= self.capture_duration:
             return True
 
-    def get_geoip_info(self, src_ip):
-        if src_ip in self.geoip_cache:
-            return self.geoip_cache[src_ip]
+    def get_geoip_info(self, ip):
+        if ip in self.geoip_cache:
+            return self.geoip_cache[ip]
 
         try:
-            response = self.reader.city(src_ip)
+            response = self.reader.city(ip)
             country = response.country.name
             city = response.city.name
 
-            ipwhois = IPWhois(src_ip)
+            ipwhois = IPWhois(ip)
             ipwhois_result = ipwhois.lookup_rdap()
             as_info = ipwhois_result.get('asn_description', 'N/A')
 
@@ -66,23 +65,25 @@ class PacketSniffer:
             as_info = "Custom AS Organization: arin-pfs-sea"
 
         result = {'GeoIP Information': geoip_info, 'AS Organization': as_info}
-        self.geoip_cache[src_ip] = result
+        self.geoip_cache[ip] = result
         return result
 
     def assign_geoip_info(self):
         for result in tqdm(self.geoip_results, desc="Assigning GeoIP Info", unit=" packet"):
             src_ip = result['Source IP']
-            geoip_info = self.get_geoip_info(src_ip)
+            dst_ip = result['Destination IP']
 
-            result['GeoIP Information'] = geoip_info['GeoIP Information']
-            result['AS Organization'] = geoip_info['AS Organization']
+            src_geoip_info = self.get_geoip_info(src_ip)
+            dst_geoip_info = self.get_geoip_info(dst_ip)
 
+            result['GeoIP Information'] = dst_geoip_info['GeoIP Information']
+            result['AS Organization'] = dst_geoip_info['AS Organization']
 
     def start_capture(self):
         try:
             with tqdm(total=self.capture_duration.total_seconds(), desc="Capturing Packets", unit="sniff") as pbar:
                 self.start_time = datetime.now()
-                sniff(prn=lambda pkt: self.update_progress(pkt, pbar), filter=f"host {self.target_ip}",
+                sniff(prn=lambda pkt: self.update_progress(pkt, pbar), filter=f"src host {self.target_ip}",
                       store=0, stop_filter=self.timeout_callback,
                       timeout=self.capture_duration.total_seconds())
         except KeyboardInterrupt:
