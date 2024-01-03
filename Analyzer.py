@@ -17,7 +17,7 @@ class PacketSniffer:
         self.capture_duration = timedelta(minutes=capture_duration_minutes)
         self.start_time = time.time()
         self.geoip_results = []
-        self.geoip_cache = {}  # Cache for GeoIP information
+        self.geoip_cache = {}
         self.reader = geoip2.database.Reader(r'C:\Users\Wault404\Desktop\python\SOCAnalyze\GeoLite2-City_20231110\GeoLite2-City.mmdb')
 
     def packet_callback(self, packet):
@@ -66,7 +66,7 @@ class PacketSniffer:
             as_info = "Custom AS Organization: arin-pfs-sea"
 
         result = {'GeoIP Information': geoip_info, 'AS Organization': as_info}
-        self.geoip_cache[src_ip] = result  # Cache the result
+        self.geoip_cache[src_ip] = result
         return result
 
     def assign_geoip_info(self):
