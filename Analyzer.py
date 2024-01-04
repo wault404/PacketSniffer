@@ -200,4 +200,3 @@ if __name__ == "__main__":
             pass
     else:
         print("Usage: python Analyzer.py sniff <target_ip> <capture_duration_minutes>")
-#
