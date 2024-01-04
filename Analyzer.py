@@ -8,10 +8,12 @@ from datetime import datetime, timedelta
 import csv
 from tqdm import tqdm
 
+#POSSIBLE LOOKUP BATCHING FOR geoip2 lib
 conf.use_pcap = True
 
 class PacketSniffer:
-    def __init__(self, target_ip, capture_duration_minutes=1):
+    def __init__(self, target_ip, capture_duration_minutes=5):
+        #capture_duration_minutes is CHANGEABLE
         self.target_ip = target_ip
         self.capture_duration = timedelta(minutes=capture_duration_minutes)
         self.start_time = None
@@ -19,22 +21,25 @@ class PacketSniffer:
         self.geoip_cache = {}
         self.reader = geoip2.database.Reader(r'C:\Users\Wault404\Desktop\python\SOCAnalyze\GeoLite2-City_20231110\GeoLite2-City.mmdb')
 
+
     def packet_callback(self, packet):
-        src_ip = packet[IP].src
-        dst_ip = packet[IP].dst
-        packet_size = len(packet)
+            try:
+                src_ip = packet[IP].src
+                dst_ip = packet[IP].dst
+                packet_size = len(packet)
 
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        self.geoip_results.append({
-            'Timestamp': timestamp,
-            'Source IP': src_ip,
-            'Destination IP': dst_ip,
-            'Packet Size': packet_size,
-            'GeoIP Information': None,
-            'AS Organization': None
-        })
-
+                self.geoip_results.append({
+                    'Timestamp': timestamp,
+                    'Source IP': src_ip,
+                    'Destination IP': dst_ip,
+                    'Packet Size': packet_size,
+                    'GeoIP Information': None,
+                    'AS Organization': None
+                })
+            except Exception as e:
+                print(f"Error in packet_callback: {e}")
     def timeout_callback(self, packet):
         elapsed_time = datetime.now() - self.start_time
         if elapsed_time >= self.capture_duration:
@@ -86,8 +91,8 @@ class PacketSniffer:
                 sniff(prn=lambda pkt: self.update_progress(pkt, pbar), filter=f"src host {self.target_ip}",
                       store=0, stop_filter=self.timeout_callback,
                       timeout=self.capture_duration.total_seconds())
-        except KeyboardInterrupt:
-            pass
+        except Exception as e:
+            print(f"Error in start_capture: {e}")
         finally:
             self.stop_capture()
 
