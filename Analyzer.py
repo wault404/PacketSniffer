@@ -21,7 +21,6 @@ class PacketSniffer:
         self.geoip_cache = {}
         self.reader = geoip2.database.Reader(r'C:\Users\Wault404\Desktop\python\SOCAnalyze\GeoLite2-City_20231110\GeoLite2-City.mmdb')
 
-
     def packet_callback(self, packet):
             try:
                 src_ip = packet[IP].src
@@ -104,8 +103,9 @@ class PacketSniffer:
         print("\nStopping capture...")
         self.assign_geoip_info()
         self.reader.close()
-        self.save_to_csv("geoip_information.csv", self.geoip_results)
-        self.display_geoip_table()
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        filename = f"geoip_information_{timestamp}.csv"
+        self.save_to_csv(filename, self.geoip_results)
 
     def save_to_csv(self, filename, data):
         with open(filename, mode='w', newline='') as file:
