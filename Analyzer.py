@@ -6,26 +6,21 @@ import tkinter as tk
 from tkinter import ttk
 from datetime import datetime, timedelta
 import csv
-import time
-# POSSIBLE LOOKUP BATCHING FOR BETTER OPTIMIZATION GEOIP2-City SUPPORTS IT!
+from tqdm import tqdm
+
+#POSSIBLE LOOKUP BATCHING FOR geoip2 lib
+
 conf.use_pcap = True
 
 class PacketSniffer:
     def __init__(self, target_ip, capture_duration_minutes=5):
+        #capture_duration_minutes is CHANGEABLE
         self.target_ip = target_ip
         self.capture_duration = timedelta(minutes=capture_duration_minutes)
-        self.start_time = time.time()
+        self.start_time = None
         self.geoip_results = []
-        self.reader = geoip2.database.Reader(r'C:\Users\Wault404\Desktop\python\SOCAnalyze\GeoLite2-City_20231110\GeoLite2-City.mmdb')
-
-        # Cache for storing GeoIP information
         self.geoip_cache = {}
-
-    def get_geoip_info_from_cache(self, src_ip):
-        return self.geoip_cache.get(src_ip)
-
-    def add_geoip_info_to_cache(self, src_ip, geoip_info):
-        self.geoip_cache[src_ip] = geoip_info
+        self.reader = geoip2.database.Reader(r'C:\Users\Wault404\Desktop\python\SOCAnalyze\GeoLite2-City_20231110\GeoLite2-City.mmdb')
 
     def packet_callback(self, packet):
         src_ip = packet[IP].src
@@ -49,36 +44,83 @@ class PacketSniffer:
             'GeoIP Information': geoip_info,
             'AS Organization': as_info
         })
+    def packet_callback(self, packet):
+            try:
+                src_ip = packet[IP].src
+                dst_ip = packet[IP].dst
+                packet_size = len(packet)
 
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                self.geoip_results.append({
+                    'Timestamp': timestamp,
+                    'Source IP': src_ip,
+                    'Destination IP': dst_ip,
+                    'Packet Size': packet_size,
+                    'GeoIP Information': None,
+                    'AS Organization': None
+                })
+            except Exception as e:
+                print(f"Error in packet_callback: {e}")
     def timeout_callback(self, packet):
         elapsed_time = datetime.now() - self.start_time
         if elapsed_time >= self.capture_duration:
             return True
-    def fetch_geoip_info(self, src_ip):
+          
+    def get_geoip_info(self, ip):
+        if ip in self.geoip_cache:
+            return self.geoip_cache[ip]
+
         try:
-            response = self.reader.city(src_ip)
+            response = self.reader.city(ip)
             country = response.country.name
             city = response.city.name
-            ipwhois = IPWhois(src_ip)
+
+            ipwhois = IPWhois(ip)
             ipwhois_result = ipwhois.lookup_rdap()
             as_info = ipwhois_result.get('asn_description', 'N/A')
-            geoip_info = f"Country: {country}, City: {city}"
 
-            return geoip_info, as_info
+            geoip_info = f"Country: {country}, City: {city}"
         except geoip2.errors.AddressNotFoundError:
-            return "GeoIP information not available", "N/A"
+            geoip_info = "GeoIP information not available"
+            as_info = "N/A"
         except Exception as e:
-            return f"Error retrieving GeoIP information: {e}", "N/A"
+            geoip_info = f"Error retrieving GeoIP information: {e}"
+            as_info = "N/A"
+
+        if as_info == "arin-pfs-sea":
+            as_info = "Custom AS Organization: arin-pfs-sea"
+
+        result = {'GeoIP Information': geoip_info, 'AS Organization': as_info}
+        self.geoip_cache[ip] = result
+        return result
+
+    def assign_geoip_info(self):
+        for result in tqdm(self.geoip_results, desc="Assigning GeoIP Info", unit=" packet"):
+            src_ip = result['Source IP']
+            dst_ip = result['Destination IP']
+
+            src_geoip_info = self.get_geoip_info(src_ip)
+            dst_geoip_info = self.get_geoip_info(dst_ip)
+
+            result['GeoIP Information'] = dst_geoip_info['GeoIP Information']
+            result['AS Organization'] = dst_geoip_info['AS Organization']
 
     def start_capture(self):
         try:
-            self.start_time = datetime.now()
-            sniff(prn=self.packet_callback, filter=f"host {self.target_ip}", store=0, stop_filter=self.timeout_callback,
-                  timeout=self.capture_duration.total_seconds())
-        except KeyboardInterrupt:
-            pass
+            with tqdm(total=self.capture_duration.total_seconds(), desc="Capturing Packets", unit="sniff") as pbar:
+                self.start_time = datetime.now()
+                sniff(prn=lambda pkt: self.update_progress(pkt, pbar), filter=f"src host {self.target_ip}",
+                      store=0, stop_filter=self.timeout_callback,
+                      timeout=self.capture_duration.total_seconds())
+        except Exception as e:
+            print(f"Error in start_capture: {e}")
         finally:
             self.stop_capture()
+
+    def update_progress(self, packet, pbar):
+        pbar.update(1)
+        self.packet_callback(packet)
 
     def stop_capture(self):
         print("\nStopping capture...")
@@ -166,7 +208,6 @@ class PacketSniffer:
 if __name__ == "__main__":
     target_ip = "192.168.0.108"
     packet_sniffer = PacketSniffer(target_ip)
-#target_ip IS USER DEPENDENT RUN ipconfig IN CMD AND EXTRACT THE IPv4 Addres
     try:
         packet_sniffer.start_capture()
     except KeyboardInterrupt:
