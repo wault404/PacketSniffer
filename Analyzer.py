@@ -7,15 +7,16 @@ from tkinter import ttk
 from datetime import datetime, timedelta
 import csv
 from tqdm import tqdm
+import sys
 
 #POSSIBLE LOOKUP BATCHING FOR geoip2 lib
 conf.use_pcap = True
 
 class PacketSniffer:
-    def __init__(self, target_ip, capture_duration_minutes=5):
+    def __init__(self, target_ip, capture_duration_minutes):
         #capture_duration_minutes is CHANGEABLE
         self.target_ip = target_ip
-        self.capture_duration = timedelta(minutes=capture_duration_minutes)
+        self.capture_duration = timedelta(seconds=capture_duration_minutes)
         self.start_time = None
         self.geoip_results = []
         self.geoip_cache = {}
@@ -185,9 +186,18 @@ class PacketSniffer:
         grouped_root.mainloop()
 
 if __name__ == "__main__":
-    target_ip = "192.168.0.108"
-    packet_sniffer = PacketSniffer(target_ip)
-    try:
-        packet_sniffer.start_capture()
-    except KeyboardInterrupt:
-        pass
+    # Extract command-line arguments
+    if len(sys.argv) == 4 and sys.argv[1] == "sniff":
+        target_ip = sys.argv[2]
+        capture_duration_minutes = int(sys.argv[3])
+
+        # Instantiate PacketSniffer with provided arguments
+        packet_sniffer = PacketSniffer(target_ip, capture_duration_minutes)
+
+        try:
+            packet_sniffer.start_capture()
+        except KeyboardInterrupt:
+            pass
+    else:
+        print("Usage: python Analyzer.py sniff <target_ip> <capture_duration_minutes>")
+#
