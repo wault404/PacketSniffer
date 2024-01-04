@@ -21,29 +21,7 @@ class PacketSniffer:
         self.geoip_results = []
         self.geoip_cache = {}
         self.reader = geoip2.database.Reader(r'C:\Users\Wault404\Desktop\python\SOCAnalyze\GeoLite2-City_20231110\GeoLite2-City.mmdb')
-
-    def packet_callback(self, packet):
-        src_ip = packet[IP].src
-        dst_ip = packet[IP].dst
-        packet_size = len(packet)
-
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        cached_result = self.get_geoip_info_from_cache(src_ip)
-        if cached_result:
-            geoip_info, as_info = cached_result
-        else:
-            geoip_info, as_info = self.fetch_geoip_info(src_ip)
-            self.add_geoip_info_to_cache(src_ip, (geoip_info, as_info))
-
-        self.geoip_results.append({
-            'Timestamp': timestamp,
-            'Source IP': src_ip,
-            'Destination IP': dst_ip,
-            'Packet Size': packet_size,
-            'GeoIP Information': geoip_info,
-            'AS Organization': as_info
-        })
+        
     def packet_callback(self, packet):
             try:
                 src_ip = packet[IP].src
@@ -62,6 +40,7 @@ class PacketSniffer:
                 })
             except Exception as e:
                 print(f"Error in packet_callback: {e}")
+                
     def timeout_callback(self, packet):
         elapsed_time = datetime.now() - self.start_time
         if elapsed_time >= self.capture_duration:
