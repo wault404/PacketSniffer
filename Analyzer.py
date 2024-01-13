@@ -16,6 +16,7 @@ from tkinter import ttk
 from datetime import datetime, timedelta
 import csv
 from tqdm import tqdm
+import os
 
 #POSSIBLE LOOKUP BATCHING FOR geoip2 lib
 conf.use_pcap = True
@@ -36,7 +37,8 @@ class PacketSniffer:
         self.start_time = None
         self.geoip_results = []
         self.geoip_cache = {}
-        self.reader = geoip2.database.Reader(r'C:\Users\Wault404\Desktop\python\SOCAnalyze\GeoLite2-City_20231110\GeoLite2-City.mmdb')
+        mmdb_path = os.path.join(os.path.dirname(__file__), 'database', 'GeoLite2-City.mmdb')
+        self.reader = geoip2.database.Reader(mmdb_path)
 
     'Packet_callback :'
     'Executed for each packet captured by Scapy'
